@@ -79,8 +79,9 @@ func NewCSRCleanerController(
 func (ccc *CSRCleanerController) Run(ctx context.Context, workers int) {
 	defer utilruntime.HandleCrash()
 
-	klog.Infof("Starting CSR cleaner controller")
-	defer klog.Infof("Shutting down CSR cleaner controller")
+	logger := klog.FromContext(ctx)
+	logger.Info("Starting CSR cleaner controller")
+	defer logger.Info("Shutting down CSR cleaner controller")
 
 	for i := 0; i < workers; i++ {
 		go wait.UntilWithContext(ctx, ccc.worker, pollingInterval)
@@ -92,13 +93,14 @@ func (ccc *CSRCleanerController) Run(ctx context.Context, workers int) {
 // worker runs a thread that dequeues CSRs, handles them, and marks them done.
 func (ccc *CSRCleanerController) worker(ctx context.Context) {
 	csrs, err := ccc.csrLister.List(labels.Everything())
+	logger := klog.FromContext(ctx)
 	if err != nil {
-		klog.Errorf("Unable to list CSRs: %v", err)
+		logger.Error(err, "Unable to list CSRs")
 		return
 	}
 	for _, csr := range csrs {
 		if err := ccc.handle(ctx, csr); err != nil {
-			klog.Errorf("Error while attempting to clean CSR %q: %v", csr.Name, err)
+			logger.Error(err, "Error while attempting to clean CSR", "name", csr.Name)
 		}
 	}
 }
