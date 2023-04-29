@@ -98,8 +98,9 @@ func (c *Publisher) Run(ctx context.Context, workers int) {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 
-	klog.Infof("Starting root CA certificate configmap publisher")
-	defer klog.Infof("Shutting down root CA certificate configmap publisher")
+	logger := klog.FromContext(ctx)
+	logger.Info("Starting root CA certificate configmap publisher")
+	defer logger.Info("Shutting down root CA certificate configmap publisher")
 
 	if !cache.WaitForNamedCacheSync("crt configmap", ctx.Done(), c.cmListerSynced) {
 		return
@@ -177,7 +178,8 @@ func (c *Publisher) syncNamespace(ctx context.Context, ns string) (err error) {
 	startTime := time.Now()
 	defer func() {
 		recordMetrics(startTime, err)
-		klog.V(4).Infof("Finished syncing namespace %q (%v)", ns, time.Since(startTime))
+		logger := klog.FromContext(ctx)
+		logger.Info("Finished syncing namespace", "namespace", ns, "duration", time.Since(startTime))
 	}()
 
 	cm, err := c.cmLister.ConfigMaps(ns).Get(RootCACertConfigMapName)
