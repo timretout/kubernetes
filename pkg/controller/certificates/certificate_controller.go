@@ -109,8 +109,9 @@ func (cc *CertificateController) Run(ctx context.Context, workers int) {
 	defer utilruntime.HandleCrash()
 	defer cc.queue.ShutDown()
 
-	klog.Infof("Starting certificate controller %q", cc.name)
-	defer klog.Infof("Shutting down certificate controller %q", cc.name)
+	logger := klog.FromContext(ctx)
+	logger.Info("Starting certificate controller", "name", cc.name)
+	defer logger.Info("Shutting down certificate controller", "name", cc.name)
 
 	if !cache.WaitForNamedCacheSync(fmt.Sprintf("certificate-%s", cc.name), ctx.Done(), cc.csrsSynced) {
 		return
