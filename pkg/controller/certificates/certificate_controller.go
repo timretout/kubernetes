@@ -143,7 +143,8 @@ func (cc *CertificateController) processNextWorkItem(ctx context.Context) bool {
 		if _, ignorable := err.(ignorableError); !ignorable {
 			utilruntime.HandleError(fmt.Errorf("Sync %v failed with : %v", cKey, err))
 		} else {
-			klog.V(4).Infof("Sync %v failed with : %v", cKey, err)
+			logger := klog.FromContext(ctx)
+			logger.V(4).Info("Sync failed", "key", cKey, "err", err)
 		}
 		return true
 	}
@@ -164,12 +165,13 @@ func (cc *CertificateController) enqueueCertificateRequest(obj interface{}) {
 
 func (cc *CertificateController) syncFunc(ctx context.Context, key string) error {
 	startTime := time.Now()
+	logger := klog.FromContext(ctx)
 	defer func() {
-		klog.V(4).Infof("Finished syncing certificate request %q (%v)", key, time.Since(startTime))
+		logger.V(4).Info("Finished syncing certificate request", "key", key, "duration", time.Since(startTime))
 	}()
 	csr, err := cc.csrLister.Get(key)
 	if errors.IsNotFound(err) {
-		klog.V(3).Infof("csr has been deleted: %v", key)
+		logger.V(3).Info("CSR has been deleted", "key", key)
 		return nil
 	}
 	if err != nil {
